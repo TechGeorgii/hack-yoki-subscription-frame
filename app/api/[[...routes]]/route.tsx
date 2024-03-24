@@ -198,12 +198,12 @@ app.transaction("/approve", async (c) => {
 
   // c.frameData?.fid
   return c.contract({
-    abi: abi,
+    abi: ERC20_abi,
     // @ts-ignore
     chainId: chainIdStr,
-    functionName: "subscribe",
-    //args: [CONTRACT, "6000"],  // we approve 0.006 USDC
-    to: CONTRACT,
+    functionName: "approve",
+    args: [CONTRACT, "6000"],  // we approve 0.006 USDC
+    to: subscriptionTokenAddress,
   });
 });
 
