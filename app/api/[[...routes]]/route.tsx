@@ -265,7 +265,8 @@ app.frame('/finish', (c) => {
   // const { transactionId } = c
   // const scanUrl = "https://basescan.org/tx/" + transactionId;
   return c.res({
-    image: "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/QmVbd6q41ZrYsa8iQzVD3vXPNRUejSkQJAZ7AFMi5DGrQP", 
+    image: "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/QmVbd6q41ZrYsa8iQzVD3vXPNRUejSkQJAZ7AFMi5DGrQP", // thank you for support
+    imageAspectRatio: "1:1",
     intents: [
       <Button.Link href="https://warpcast.com/techgeorgii">
         Read me on Warpcast
@@ -277,6 +278,7 @@ app.frame('/finish', (c) => {
 app.frame('/unsubscribed', (c) => {
   return c.res({
     image: "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/QmXi8T9MKegXayWQvcALqs5BpRfeKm4MjxBaozw8e8rmcx", // unsubscribed
+    imageAspectRatio: "1:1",
     intents: [
       <Button.Link href="https://warpcast.com/techgeorgii">
         You can still read me on Warpcast
