@@ -157,6 +157,7 @@ app.frame("/checkWallet", async (c) => {
   
   if (subscribed) {
     return c.res({
+      action: "/unsubscribed",
       image:
         "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/QmVbd6q41ZrYsa8iQzVD3vXPNRUejSkQJAZ7AFMi5DGrQP", // thank you
       imageAspectRatio: "1:1",
@@ -164,6 +165,9 @@ app.frame("/checkWallet", async (c) => {
         <Button.Link href="https://warpcast.com/techgeorgii">
           Read me on Warpcast
         </Button.Link>,
+        <Button.Transaction target="/unsubscribe">
+          Unsubscribe
+        </Button.Transaction>,
       ]
     });
   }
@@ -232,7 +236,6 @@ app.transaction("/approve", async (c) => {
 
 app.transaction("/subscribe", async (c) => {
   console.log("subscribe called");
-  console.log(c);
 
   return c.contract({
     abi: abi,
@@ -244,6 +247,19 @@ app.transaction("/subscribe", async (c) => {
   });
 });
 
+
+app.transaction("/unsubscribe", async (c) => {
+  console.log("unsubscribe called");
+
+  return c.contract({
+    abi: abi,
+    // @ts-ignore
+    chainId: chainIdStr,
+    functionName: "unsubscribe",
+    args: [],
+    to: CONTRACT,
+  });
+});
 
 app.frame('/finish', (c) => {
   // const { transactionId } = c
@@ -257,6 +273,18 @@ app.frame('/finish', (c) => {
     ] 
   })
 });
+
+app.frame('/unsubscribed', (c) => {
+  return c.res({
+    image: "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/QmXi8T9MKegXayWQvcALqs5BpRfeKm4MjxBaozw8e8rmcx", // unsubscribed
+    intents: [
+      <Button.Link href="https://warpcast.com/techgeorgii">
+        You can still read me on Warpcast
+      </Button.Link>, 
+    ] 
+  })
+});
+
 
 export const GET = handle(app);
 export const POST = handle(app);
