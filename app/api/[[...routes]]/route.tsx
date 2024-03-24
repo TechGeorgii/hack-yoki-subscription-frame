@@ -197,15 +197,13 @@ app.transaction("/approve", async (c) => {
   console.log("approve called: CONTRACT " + CONTRACT + " on amount: " + am);
   console.log(c);
 
-  const contract = "000000000000000000000000" + process.env.CONTRACT_ADDRESS;
-
   // c.frameData?.fid
   return c.contract({
     abi: ERC20_abi,
     // @ts-ignore
     chainId: chainIdStr,
     functionName: "approve",
-    args: [contract, BigInt(6000)],  // we approve 0.006 USDC
+    args: [CONTRACT, BigInt(6000)],  // we approve 0.006 USDC
     to: subscriptionTokenAddress,
   });
 });
