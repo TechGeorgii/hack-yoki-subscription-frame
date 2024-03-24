@@ -1,6 +1,6 @@
 /** @jsxImportSource frog/jsx */
 
-import { Button, Frog, TextInput, parseEther } from "frog";
+import { Button, FrameResponse, Frog, TextInput, parseEther } from "frog";
 import { handle } from "frog/next";
 import { createWalletClient, http, createPublicClient, parseUnits } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
@@ -78,6 +78,64 @@ app.use(
   fdk.analyticsMiddleware({ frameId: "hats-store", customId: "purchased" }),
 );
 
+async function checkBalance(wallet :string) {
+  const bal = await getUSDTBalance(wallet);
+  console.log(`${wallet} USDT balance: ${bal}`)
+  if (bal < 1000)  { // 0.001 USDC 
+    const polygonscanUrl = `https://basescan.org/address/${wallet}`;
+
+    return {
+      image: "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/Qmd6iXnGDQKk1LGynWQefWLcaNJBnzuM9A21czssagsxXv", // no USDC
+      imageAspectRatio: "1:1",
+      intents: [
+        <Button.Link href={polygonscanUrl}>
+          Check on scan
+        </Button.Link>,
+        <Button action="/support">I topped up. Refresh</Button>,
+      ],
+      title: "TechGeorgii - Subscribing",
+    } as FrameResponse;
+  }
+}
+
+async function checkAllowance(wallet: string) {
+  const allowance = await getUSDTAllowance(wallet, CONTRACT);
+  if (allowance < 1000) {  // less than 0.001 USDC
+
+    const scan = `https://basescan.org/address/${CONTRACT}`;
+    return {
+      action: "/approveSuccess",
+      image: "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/QmbG3to1UgTQ9PHnW3grrwkByimCBBtnQTRshLztsmihvt", // no allowance
+      imageAspectRatio: "1:1",
+      intents: [
+        <Button.Transaction target="/approve">
+          Approve 0.006
+        </Button.Transaction>,
+        <Button.Link href={scan}>Contract</Button.Link>,
+        <Button action="/support">Refresh</Button>,
+      ],
+      title: "TechGeorgii - Subscribing",
+    } as FrameResponse;  
+  }  
+}
+
+async function doSubscribe(fromApprove: boolean) {
+  return {
+    action: "/finish",
+    image:
+    fromApprove 
+      ? "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/QmeNWvNTC66KyjbS5KLz4tyV3RtE4MXt7tbpEdqAMDVbvP" // approve success
+      : "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/QmVTB493sxf5AhSMRNC4p3iXw99LB5qp8S661qMhCW5DpQ" // not subscribed
+      , 
+    imageAspectRatio: "1:1",
+    intents: [
+      <Button.Transaction target="/subscribe">
+        Subscribe
+      </Button.Transaction>,
+    ]
+  } as FrameResponse;
+}
+
 app.frame("/", async (c) => {  
     return c.res({
       image:
@@ -89,19 +147,6 @@ app.frame("/", async (c) => {
       ],
       title: "TechGeorgii",
     });
-});
-
-app.frame('/finish', (c) => {
-  // const { transactionId } = c
-  // const scanUrl = "https://basescan.org/tx/" + transactionId;
-  return c.res({
-    image: "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/QmVbd6q41ZrYsa8iQzVD3vXPNRUejSkQJAZ7AFMi5DGrQP", 
-    intents: [
-      <Button.Link href="https://warpcast.com/techgeorgii">
-        Read me on Warpcast
-      </Button.Link>, 
-    ] 
-  })
 });
 
 app.frame("/checkWallet", async (c) => {
@@ -121,16 +166,19 @@ app.frame("/checkWallet", async (c) => {
         </Button.Link>,
       ]
     });
-  } else {
-    const actionSupport = "/support/" + wallet;
-    
-    return c.res({
-      image: "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/QmVTB493sxf5AhSMRNC4p3iXw99LB5qp8S661qMhCW5DpQ",  // not subscribed
-      imageAspectRatio: "1:1",
-      intents: [ <Button action={actionSupport}>Subscribe</Button> ]
-    });
   }
+
+  const bal = await checkBalance(wallet);
+  if (bal)
+    return c.res(bal);
+
+  const allowance = await checkAllowance(wallet);
+  if (allowance) 
+    return c.res(allowance);
+  
+  return c.res(await doSubscribe(false));
 });
+
 
 app.frame("/support/:wallet", async (c) => {
   const wallet = c.req.param('wallet');
@@ -138,42 +186,13 @@ app.frame("/support/:wallet", async (c) => {
   console.log("/support called");
   console.log(c);
 
-  const bal = await getUSDTBalance(wallet);
-  console.log(`${wallet} USDT balance: ${bal}`)
-  if (bal < 1000)  { // 0.001 USDC 
-    const polygonscanUrl = `https://basescan.org/address/${wallet}`;
+  const bal = await checkBalance(wallet);
+  if (bal)
+    return c.res(bal);
 
-    return c.res({
-      image: "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/Qmd6iXnGDQKk1LGynWQefWLcaNJBnzuM9A21czssagsxXv", // no USDC
-      imageAspectRatio: "1:1",
-      intents: [
-        <Button.Link href={polygonscanUrl}>
-          Check on scan
-        </Button.Link>,
-        <Button action="/support">I topped up. Refresh</Button>,
-      ],
-      title: "TechGeorgii - Subscribing",
-    });      
-  }
-
-  const allowance = await getUSDTAllowance(wallet, CONTRACT);
-  if (allowance < 1000) {  // less than 0.001 USDC
-
-    const scan = `https://basescan.org/address/${CONTRACT}`;
-    return c.res({
-      action: "/approveSuccess",
-      image: "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/QmbG3to1UgTQ9PHnW3grrwkByimCBBtnQTRshLztsmihvt", // no allowance
-      imageAspectRatio: "1:1",
-      intents: [
-        <Button.Transaction target="/approve">
-          Approve 0.006
-        </Button.Transaction>,
-        <Button.Link href={scan}>Contract</Button.Link>,
-        <Button action="/support">Refresh</Button>,
-      ],
-      title: "TechGeorgii - Subscribing",
-    });      
-  }
+  const allowance = await checkAllowance(wallet);
+  if (allowance) 
+    return c.res(allowance);
     
   return c.res({
     action: "/finish",
@@ -191,17 +210,7 @@ app.frame("/approveSuccess", async (c) => {
   console.log("approveSuccess called");
   console.log(c);
 
-  return c.res({
-    action: "/finish",
-    image:
-      "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/QmeNWvNTC66KyjbS5KLz4tyV3RtE4MXt7tbpEdqAMDVbvP", // approve success
-    imageAspectRatio: "1:1",
-    intents: [
-      <Button.Transaction target="/subscribe">
-        Subscribe
-      </Button.Transaction>,
-    ]
-  });
+  return c.res(await doSubscribe(true));
 });
 
 
@@ -233,6 +242,20 @@ app.transaction("/subscribe", async (c) => {
     args: [],
     to: CONTRACT,
   });
+});
+
+
+app.frame('/finish', (c) => {
+  // const { transactionId } = c
+  // const scanUrl = "https://basescan.org/tx/" + transactionId;
+  return c.res({
+    image: "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/QmVbd6q41ZrYsa8iQzVD3vXPNRUejSkQJAZ7AFMi5DGrQP", 
+    intents: [
+      <Button.Link href="https://warpcast.com/techgeorgii">
+        Read me on Warpcast
+      </Button.Link>, 
+    ] 
+  })
 });
 
 export const GET = handle(app);
