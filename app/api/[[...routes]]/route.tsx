@@ -16,6 +16,7 @@ const fdk = new PinataFDK({
 
 const subscriptionTokenAddress = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";  // USDC base
 const chainId = base;
+const chainIdStr = "eip155:8453";
 
 const CONTRACT = process.env.CONTRACT_ADDRESS as `0x` || ""
 const account = privateKeyToAccount((process.env.PRIVATE_KEY as `0x`) || "");
@@ -110,6 +111,9 @@ app.frame("/", async (c) => {
 });
 
 app.frame("/support", async (c) => {
+  console.log("/support called");
+  console.log(c);
+
   const bal = await getUSDTBalance(wallet);
   console.log(`${wallet} USDT balance: ${bal}`)
   if (bal < 10000)  { // 0.01 USDT 
@@ -160,8 +164,6 @@ app.frame("/support", async (c) => {
 app.transaction("/approve", async (c) => {
   console.log("approve called");
   console.log(c);
-
-
   var bigApproval: bigint;
   var rawApproval = Number(c.inputText);
 
@@ -179,7 +181,7 @@ app.transaction("/approve", async (c) => {
   return c.contract({
     abi: ERC20_abi,
     // @ts-ignore
-    chainId: chainId,
+    chainId: chainIdStr,
     functionName: "approve",
     args: [CONTRACT, bigApproval],
     to: subscriptionTokenAddress,
