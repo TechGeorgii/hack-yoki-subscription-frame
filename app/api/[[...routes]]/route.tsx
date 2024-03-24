@@ -92,15 +92,15 @@ app.frame("/", async (c) => {
 });
 
 app.frame('/finish', (c) => {
-  const { transactionId } = c
-  const scanUrl = "https://basescan.org/tx/" + transactionId;
+  // const { transactionId } = c
+  // const scanUrl = "https://basescan.org/tx/" + transactionId;
   return c.res({
     image: "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/QmVbd6q41ZrYsa8iQzVD3vXPNRUejSkQJAZ7AFMi5DGrQP", 
     intents: [
-      <Button.Link href={scanUrl}>
-        See tx
-      </Button.Link>,
-    ]
+      <Button.Link href="https://warpcast.com/techgeorgii">
+        Read me on Warpcast
+      </Button.Link>, 
+    ] 
   })
 });
 
