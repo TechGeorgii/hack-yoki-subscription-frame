@@ -202,7 +202,7 @@ app.transaction("/approve", async (c) => {
     // @ts-ignore
     chainId: chainIdStr,
     functionName: "approve",
-    args: [CONTRACT, BigInt(60000)],  // we approve 0.006 USDC
+    args: [CONTRACT, 6000],  // we approve 0.006 USDC
     to: subscriptionTokenAddress,
   });
 });
