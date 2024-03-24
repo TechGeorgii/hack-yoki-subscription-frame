@@ -132,6 +132,7 @@ async function doSubscribe(fromApprove: boolean) {
       <Button.Transaction target="/subscribe">
         Subscribe
       </Button.Transaction>,
+      <Button action="/">I subscribed</Button>,
     ]
   } as FrameResponse;
 }
@@ -198,16 +199,7 @@ app.frame("/support/:wallet", async (c) => {
   if (allowance) 
     return c.res(allowance);
     
-  return c.res({
-    action: "/finish",
-    image: "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/QmVTB493sxf5AhSMRNC4p3iXw99LB5qp8S661qMhCW5DpQ",  // not subscribed
-    imageAspectRatio: "1:1",
-    intents: [
-      <Button.Transaction target="/subscribe">
-        Subscribe
-      </Button.Transaction>,
-    ],
-  });
+  return c.res(await doSubscribe(false));
 });
 
 app.frame("/approveSuccess", async (c) => {
