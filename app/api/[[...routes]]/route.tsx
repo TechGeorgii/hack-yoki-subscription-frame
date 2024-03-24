@@ -91,6 +91,18 @@ app.frame("/", async (c) => {
     });
 });
 
+app.frame('/finish', (c) => {
+  const { transactionId } = c
+  const scanUrl = "https://basescan.org/tx/" + transactionId;
+  return c.res({
+    image: "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/QmVbd6q41ZrYsa8iQzVD3vXPNRUejSkQJAZ7AFMi5DGrQP", 
+    intents: [
+      <Button.Link href={scanUrl}>
+        See tx
+      </Button.Link>,
+    ]
+  })
+});
 
 app.frame("/checkWallet", async (c) => {
   const wallet = c.inputText ?? "";
@@ -221,20 +233,6 @@ app.transaction("/subscribe", async (c) => {
     args: [],
     to: CONTRACT,
   });
-});
-
-
-app.frame('/finish', (c) => {
-  const { transactionId } = c
-  const scanUrl = "https://basescan.org/tx/" + transactionId;
-  return c.res({
-    image: "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/QmVbd6q41ZrYsa8iQzVD3vXPNRUejSkQJAZ7AFMi5DGrQP", 
-    intents: [
-      <Button.Link href={scanUrl}>
-        See tx
-      </Button.Link>,
-    ]
-  })
 });
 
 export const GET = handle(app);
