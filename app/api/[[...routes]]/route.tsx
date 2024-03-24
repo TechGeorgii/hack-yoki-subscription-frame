@@ -91,7 +91,7 @@ async function checkBalance(wallet :string) {
         <Button.Link href={polygonscanUrl}>
           Check on scan
         </Button.Link>,
-        <Button action="/support">I topped up. Refresh</Button>,
+        <Button action={"/support/" + wallet}>I topped up. Refresh</Button>,
       ],
       title: "TechGeorgii - Subscribing",
     } as FrameResponse;
@@ -132,7 +132,7 @@ async function doSubscribe(fromApprove: boolean) {
       <Button.Transaction target="/subscribe">
         Subscribe
       </Button.Transaction>,
-      <Button action="/">I subscribed</Button>,
+      <Button action="/">I subscribed (tx ✅)</Button>,
     ]
   } as FrameResponse;
 }
