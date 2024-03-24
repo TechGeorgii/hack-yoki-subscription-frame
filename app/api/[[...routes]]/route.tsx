@@ -2,7 +2,7 @@
 
 import { Button, Frog, TextInput, parseEther } from "frog";
 import { handle } from "frog/next";
-import { createWalletClient, http, createPublicClient } from "viem";
+import { createWalletClient, http, createPublicClient, parseUnits } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { polygon } from "viem/chains";
 import { PinataFDK } from "pinata-fdk";
@@ -14,10 +14,11 @@ const fdk = new PinataFDK({
   pinata_gateway: "",
 });
 
-const CONTRACT = process.env.CONTRACT_ADDRESS as `0x` || ""
-
-const account = privateKeyToAccount((process.env.PRIVATE_KEY as `0x`) || "");
 const USDTAddress = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F";
+const chainId = "eip155:137";
+
+const CONTRACT = process.env.CONTRACT_ADDRESS as `0x` || ""
+const account = privateKeyToAccount((process.env.PRIVATE_KEY as `0x`) || "");
 const wallet = process.env.WALLET as `0x` || "";  // linked to Farcaster
 
 const publicClient = createPublicClient({
@@ -132,10 +133,14 @@ app.frame("/support", async (c) => {
       image: "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/Qmdd29NvGKKG3hufRnSWzsPYDod39hhuwqUXmpdd7kvYAs", // no allowance
       imageAspectRatio: "1:1",
       intents: [
-        <Button.Link href={approvalsUrl}>
-          View on Polygonscan
-        </Button.Link>,
-        <Button action="/support">I approved. Refresh</Button>,
+        // <TextInput placeholder="Approve amount. At least 0.01, default 0.06" />,
+        // <Button.Link href={approvalsUrl}>
+        //   Approvals
+        // </Button.Link>,
+        <Button.Transaction target="/approve">
+          Approve
+        </Button.Transaction>,
+        <Button action="/support">Refresh</Button>,
       ],
       title: "TechGeorgii - Subscribing",
     });      
@@ -154,6 +159,18 @@ app.frame("/support", async (c) => {
   });
 });
 
+// app.frame("/preApprove", async (c) => {
+//   return c.res({
+//     image:
+//       "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/QmUL8aUBiHHUSC8VUWUW7sy3pjKFLp8QHCqijF4ZpEHxrh",
+//     imageAspectRatio: "1:1",
+//     intents: [
+//       <TextInput placeholder="Wallet Address (not ens)" />,
+//       <Button>Receive Coupon</Button>,
+//     ],
+//     title: "Pinta Hat Store",
+//   });
+// });
 
 app.frame("/finish", (c) => {
   return c.res({
@@ -224,20 +241,34 @@ app.frame("/coupon", async (c) => {
   });
 });
 
-app.transaction("/buy/:price", async (c) => {
-  
-  const price = c.req.param('price')
 
+app.transaction("/approve", async (c) => {
+  console.log("approve called");
+
+  var bigApproval: bigint;
+  var rawApproval = Number(c.inputText);
+
+  if (!rawApproval)
+    bigApproval = BigInt(60000); // 0.06 USDT by default if nothing specified/incorrect number
+   else {
+    bigApproval = parseUnits(""+rawApproval, 6);
+    if (bigApproval < 60000) {
+      bigApproval = BigInt(60000);
+    }
+  }
+  console.log(`about to approve ${CONTRACT} to spend ${bigApproval}`);
+
+  // c.frameData?.fid
   return c.contract({
-    abi: abi,
+    abi: ERC20_abi,
     // @ts-ignore
-    chainId: "eip155:84532",
-    functionName: "buyHat",
-    args: [c.frameData?.fid],
-    to: CONTRACT,
-    value: parseEther(`${price}`),
+    chainId: chainId,
+    functionName: "approve",
+    args: [CONTRACT, bigApproval],
+    to: USDTAddress,
   });
 });
+
 
 export const GET = handle(app);
 export const POST = handle(app);
