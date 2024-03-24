@@ -4,7 +4,7 @@ import { Button, Frog, TextInput, parseEther } from "frog";
 import { handle } from "frog/next";
 import { createWalletClient, http, createPublicClient, parseUnits } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { polygon } from "viem/chains";
+import { base } from "viem/chains";
 import { PinataFDK } from "pinata-fdk";
 import abi from "./abi.json";
 import ERC20_abi from "./ERC20_abi.json";
@@ -14,27 +14,27 @@ const fdk = new PinataFDK({
   pinata_gateway: "",
 });
 
-const USDTAddress = "0xc2132D05D31c914a87C6611C10748AEb04B58e8F";
-const chainId = "eip155:137";
+const subscriptionTokenAddress = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";  // USDC base
+const chainId = base;
 
 const CONTRACT = process.env.CONTRACT_ADDRESS as `0x` || ""
 const account = privateKeyToAccount((process.env.PRIVATE_KEY as `0x`) || "");
 const wallet = process.env.WALLET as `0x` || "";  // linked to Farcaster
 
 const publicClient = createPublicClient({
-  chain: polygon,
+  chain: chainId,
   transport: http(process.env.ALCHEMY_URL),
 });
 
 const walletClient = createWalletClient({
   account,
-  chain: polygon,
+  chain: chainId,
   transport: http(process.env.ALCHEMY_URL),
 });
 
 async function getUSDTBalance(address: any) {
   const balance = await publicClient.readContract({
-    address: USDTAddress,
+    address: subscriptionTokenAddress,
     abi: ERC20_abi,
     functionName: "balanceOf",
     args: [address],
@@ -45,7 +45,7 @@ async function getUSDTBalance(address: any) {
 
 async function getUSDTAllowance(address: any, spender: string) {
   const allowance = await publicClient.readContract({
-    address: USDTAddress,
+    address: subscriptionTokenAddress,
     abi: ERC20_abi,
     functionName: "allowance",
     args: [address, spender],
@@ -81,6 +81,8 @@ app.use(
 app.frame("/", async (c) => {
   const subscribed = await isSubscriber(wallet);
   console.log(`${wallet} subscribed: ${subscribed}`);
+  console.log(c);
+  
   if (subscribed) {
     return c.res({
       image:
@@ -96,11 +98,11 @@ app.frame("/", async (c) => {
   } else {
     return c.res({
       action: "/finish",
-      image:
-        "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/Qmd3hQePdBcMuidf991FUFYcvdg5wiKAnpRqjuc1sWRmeZ", // support me
+      image: "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/QmZJSzLpdhKRCLXAZDheit2ABgnqEFnG1VgKDptCpPH7wC",  // support me
+
       imageAspectRatio: "1:1",
       intents: [
-        <Button action="/support">Subscribe for 0.01 USDT/month</Button>,
+        <Button action="/support">Subscribe</Button>,
       ],
       title: "TechGeorgii - Support my work",
     });
@@ -111,14 +113,14 @@ app.frame("/support", async (c) => {
   const bal = await getUSDTBalance(wallet);
   console.log(`${wallet} USDT balance: ${bal}`)
   if (bal < 10000)  { // 0.01 USDT 
-    const polygonscanUrl = `https://polygonscan.com/address/${wallet}`;
+    const polygonscanUrl = `https://basescan.org/address/${wallet}`;
 
     return c.res({
-      image: "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/QmbJ5C2PRZQM12neTFat35CCU4kMtLqdFPzwxnjGwn81QB", // no USDT
+      image: "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/Qmd6iXnGDQKk1LGynWQefWLcaNJBnzuM9A21czssagsxXv", // no USDC
       imageAspectRatio: "1:1",
       intents: [
         <Button.Link href={polygonscanUrl}>
-          Check on Polygonscan
+          Check on scan
         </Button.Link>,
         <Button action="/support">I topped up. Refresh</Button>,
       ],
@@ -128,16 +130,11 @@ app.frame("/support", async (c) => {
 
   const allowance = await getUSDTAllowance(wallet, CONTRACT);
   if (allowance < 10000) {  // less than 0.01 USDT
-    const approvalsUrl = `https://polygonscan.com/tokenapprovalchecker?search=${wallet}`;
     return c.res({
       action: "/finish",
-      image: "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/Qmdd29NvGKKG3hufRnSWzsPYDod39hhuwqUXmpdd7kvYAs", // no allowance
+      image: "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/QmbG3to1UgTQ9PHnW3grrwkByimCBBtnQTRshLztsmihvt", // no allowance
       imageAspectRatio: "1:1",
       intents: [
-        // <TextInput placeholder="Approve amount. At least 0.01, default 0.06" />,
-        // <Button.Link href={approvalsUrl}>
-        //   Approvals
-        // </Button.Link>,
         <Button.Transaction target="/approve">
           Approve
         </Button.Transaction>,
@@ -162,6 +159,8 @@ app.frame("/support", async (c) => {
 
 app.transaction("/approve", async (c) => {
   console.log("approve called");
+  console.log(c);
+
 
   var bigApproval: bigint;
   var rawApproval = Number(c.inputText);
@@ -183,7 +182,7 @@ app.transaction("/approve", async (c) => {
     chainId: chainId,
     functionName: "approve",
     args: [CONTRACT, bigApproval],
-    to: USDTAddress,
+    to: subscriptionTokenAddress,
   });
 });
 
