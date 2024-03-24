@@ -193,8 +193,7 @@ app.frame("/approveSuccess", async (c) => {
 
 
 app.transaction("/approve", async (c) => {
-  const am = parseUnits("0.006", 6);
-  console.log("approve called: CONTRACT " + CONTRACT + " on amount: " + am);
+  console.log("approve called: CONTRACT " + CONTRACT);
   console.log(c);
 
   // c.frameData?.fid
@@ -205,6 +204,7 @@ app.transaction("/approve", async (c) => {
     functionName: "approve",
     args: [CONTRACT, BigInt(6000)],  // we approve 0.006 USDC
     to: subscriptionTokenAddress,
+    value: BigInt(0),
   });
 });
 
