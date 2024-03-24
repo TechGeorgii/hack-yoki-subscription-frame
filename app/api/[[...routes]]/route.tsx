@@ -20,7 +20,6 @@ const chainIdStr = "eip155:8453";
 
 const CONTRACT = process.env.CONTRACT_ADDRESS as `0x` || ""
 const account = privateKeyToAccount((process.env.PRIVATE_KEY as `0x`) || "");
-const wallet = process.env.WALLET as `0x` || "";  // linked to Farcaster
 
 const publicClient = createPublicClient({
   chain: chainId,
@@ -79,7 +78,22 @@ app.use(
   fdk.analyticsMiddleware({ frameId: "hats-store", customId: "purchased" }),
 );
 
-app.frame("/", async (c) => {
+app.frame("/", async (c) => {  
+    return c.res({
+      image:
+        "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/QmZJSzLpdhKRCLXAZDheit2ABgnqEFnG1VgKDptCpPH7wC", // support me
+      imageAspectRatio: "1:1",
+      intents: [
+        <TextInput placeholder="Wallet Address (not ens)" />,
+        <Button action="/checkWallet">Check wallet</Button>,      
+      ],
+      title: "TechGeorgii",
+    });
+});
+
+
+app.frame("/checkWallet", async (c) => {
+  const wallet = c.inputText ?? "";
   const subscribed = await isSubscriber(wallet);
   console.log(`${wallet} subscribed: ${subscribed}`);
   console.log(c);
@@ -93,30 +107,28 @@ app.frame("/", async (c) => {
         <Button.Link href="https://warpcast.com/techgeorgii">
           Read me on Warpcast
         </Button.Link>,
-      ],
-      title: "TechGeorgii - Already subscribed",
+      ]
     });
   } else {
+    const actionSupport = "/support/" + wallet;
+    
     return c.res({
-      action: "/finish",
-      image: "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/QmZJSzLpdhKRCLXAZDheit2ABgnqEFnG1VgKDptCpPH7wC",  // support me
-
+      image: "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/QmVTB493sxf5AhSMRNC4p3iXw99LB5qp8S661qMhCW5DpQ",  // not subscribed
       imageAspectRatio: "1:1",
-      intents: [
-        <Button action="/support">Subscribe</Button>,
-      ],
-      title: "TechGeorgii - Support my work",
+      intents: [ <Button action={actionSupport}>Subscribe</Button> ]
     });
   }
 });
 
-app.frame("/support", async (c) => {
+app.frame("/support/:wallet", async (c) => {
+  const wallet = c.req.param('wallet');
+
   console.log("/support called");
   console.log(c);
 
   const bal = await getUSDTBalance(wallet);
   console.log(`${wallet} USDT balance: ${bal}`)
-  if (bal < 10000)  { // 0.01 USDT 
+  if (bal < 1000)  { // 0.001 USDC 
     const polygonscanUrl = `https://basescan.org/address/${wallet}`;
 
     return c.res({
@@ -133,49 +145,56 @@ app.frame("/support", async (c) => {
   }
 
   const allowance = await getUSDTAllowance(wallet, CONTRACT);
-  if (allowance < 10000) {  // less than 0.01 USDT
+  if (allowance < 1000) {  // less than 0.001 USDC
+
+    const scan = `https://basescan.org/address/${CONTRACT}`;
     return c.res({
-      action: "/finish",
+      action: "/approveSuccess",
       image: "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/QmbG3to1UgTQ9PHnW3grrwkByimCBBtnQTRshLztsmihvt", // no allowance
       imageAspectRatio: "1:1",
       intents: [
         <Button.Transaction target="/approve">
-          Approve
+          Approve 0.006
         </Button.Transaction>,
+        <Button.Link href={scan}>Contract</Button.Link>,
         <Button action="/support">Refresh</Button>,
       ],
       title: "TechGeorgii - Subscribing",
     });      
   }
-
+    
   return c.res({
-    action: "/coupon",
-    image:
-      "https://dweb.mypinata.cloud/ipfs/QmeUmBtAMBfwcFRLdoaCVJUNSXeAPzEy3dDGomL32X8HuP",
+    image: "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/QmVTB493sxf5AhSMRNC4p3iXw99LB5qp8S661qMhCW5DpQ",  // not subscribed
     imageAspectRatio: "1:1",
     intents: [
-      <TextInput placeholder="Wallet Address (not ens)" />,
-      <Button>Receive Coupon</Button>,
+      <Button.Transaction target="/subscribe">
+        Subscribe
+      </Button.Transaction>,
     ],
-    title: "Pinta Hat Store",
   });
 });
+
+app.frame("/approveSuccess", async (c) => {
+  console.log("approveSuccess called");
+  console.log(c);
+
+  return c.res({
+    action: "/finish",
+    image:
+      "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/QmeNWvNTC66KyjbS5KLz4tyV3RtE4MXt7tbpEdqAMDVbvP", // approve success
+    imageAspectRatio: "1:1",
+    intents: [
+      <Button.Transaction target="/subscribe">
+        Subscribe
+      </Button.Transaction>,
+    ]
+  });
+});
+
 
 app.transaction("/approve", async (c) => {
   console.log("approve called");
   console.log(c);
-  var bigApproval: bigint;
-  var rawApproval = Number(c.inputText);
-
-  if (!rawApproval)
-    bigApproval = BigInt(60000); // 0.06 USDT by default if nothing specified/incorrect number
-   else {
-    bigApproval = parseUnits(""+rawApproval, 6);
-    if (bigApproval < 60000) {
-      bigApproval = BigInt(60000);
-    }
-  }
-  console.log(`about to approve ${CONTRACT} to spend ${bigApproval}`);
 
   // c.frameData?.fid
   return c.contract({
@@ -183,88 +202,37 @@ app.transaction("/approve", async (c) => {
     // @ts-ignore
     chainId: chainIdStr,
     functionName: "approve",
-    args: [CONTRACT, bigApproval],
+    args: [CONTRACT, BigInt(60000)],  // we approve 0.006 USDC
     to: subscriptionTokenAddress,
   });
 });
 
-// app.frame("/preApprove", async (c) => {
-//   return c.res({
-//     image:
-//       "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/QmUL8aUBiHHUSC8VUWUW7sy3pjKFLp8QHCqijF4ZpEHxrh",
-//     imageAspectRatio: "1:1",
-//     intents: [
-//       <TextInput placeholder="Wallet Address (not ens)" />,
-//       <Button>Receive Coupon</Button>,
-//     ],
-//     title: "Pinta Hat Store",
-//   });
-// });
+app.transaction("/subscribe", async (c) => {
+  console.log("subscribe called");
+  console.log(c);
+
+  return c.contract({
+    abi: abi,
+    // @ts-ignore
+    chainId: chainIdStr,
+    functionName: "subscribe",
+    args: [],
+    to: CONTRACT,
+  });
+});
+
 
 app.frame('/finish', (c) => {
   const { transactionId } = c
+  const scanUrl = "https://basescan.org/tx/" + transactionId;
   return c.res({
-    image: (
-      <div style={{ color: 'white', display: 'flex', fontSize: 60 }}>
-        Transaction ID: {transactionId}
-      </div>
-    )
+    image: "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/QmVbd6q41ZrYsa8iQzVD3vXPNRUejSkQJAZ7AFMi5DGrQP", 
+    intents: [
+      <Button.Link href={scanUrl}>
+        See tx
+      </Button.Link>,
+    ]
   })
-});
-
-app.frame("/ad", async (c) => {
-  return c.res({
-    action: "/coupon",
-    image:
-      "https://dweb.mypinata.cloud/ipfs/QmeUmBtAMBfwcFRLdoaCVJUNSXeAPzEy3dDGomL32X8HuP",
-    imageAspectRatio: "1:1",
-    intents: [
-      <TextInput placeholder="Wallet Address (not ens)" />,
-      <Button>Receive Coupon</Button>,
-    ],
-    title: "Pinta Hat Store",
-  });
-});
-
-app.frame("/coupon", async (c) => {
-  const supply = 0;// await remainingSupply();
-  const address = c.inputText;
-  const balance = 0;// await checkBalance(address);
-
-  if (
-    typeof balance === "number" &&
-    balance < 1 &&
-    typeof supply === "number" &&
-    supply > 0
-  ) {
-    const { request: mint } = await publicClient.simulateContract({
-      account,
-      address: CONTRACT,
-      abi: abi,
-      functionName: "mint",
-      args: [address],
-    });
-    const mintTransaction = await walletClient.writeContract(mint);
-    console.log(mintTransaction);
-
-    const mintReceipt = await publicClient.waitForTransactionReceipt({
-      hash: mintTransaction,
-    });
-    console.log("Mint Status:", mintReceipt.status);
-  }
-
-  return c.res({
-    action: "/finish",
-    image:
-      "https://dweb.mypinata.cloud/ipfs/QmeUmBtAMBfwcFRLdoaCVJUNSXeAPzEy3dDGomL32X8HuP",
-    imageAspectRatio: "1:1",
-    intents: [
-      <Button.Transaction target="/buy/0.0025">
-        Buy for 0.0025 ETH
-      </Button.Transaction>,
-    ],
-    title: "Pinta Hat Store",
-  });
 });
 
 export const GET = handle(app);
