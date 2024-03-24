@@ -193,7 +193,8 @@ app.frame("/approveSuccess", async (c) => {
 
 
 app.transaction("/approve", async (c) => {
-  console.log("approve called: CONTRACT " + CONTRACT);
+  const am = parseUnits("0.006", 6);
+  console.log("approve called: CONTRACT " + CONTRACT + " on amount: " + am);
   console.log(c);
 
   // c.frameData?.fid
@@ -202,7 +203,7 @@ app.transaction("/approve", async (c) => {
     // @ts-ignore
     chainId: chainIdStr,
     functionName: "approve",
-    args: [CONTRACT, "6000"],  // we approve 0.006 USDC
+    args: [CONTRACT, am],  // we approve 0.006 USDC
     to: subscriptionTokenAddress,
   });
 });
