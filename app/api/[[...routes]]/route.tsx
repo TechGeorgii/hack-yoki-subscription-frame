@@ -32,7 +32,7 @@ async function checkBalance(address: any) {
   try {
     const balance = await publicClient.readContract({
       address: CONTRACT,
-      abi: abi.abi,
+      abi: abi,
       functionName: "balanceOf",
       args: [address, 0],
     });
@@ -48,7 +48,7 @@ async function remainingSupply() {
   try {
     const balance = await publicClient.readContract({
       address: CONTRACT,
-      abi: abi.abi,
+      abi: abi,
       functionName: "totalSupply",
     });
     const readableBalance = Number(balance);
@@ -79,20 +79,20 @@ app.frame("/", async (c) => {
   if (typeof balance === "number" && balance === 0) {
     return c.res({
       image:
-        "https://dweb.mypinata.cloud/ipfs/QmeeXny8775RQBZDhSppkRN15zn5nFjQUKeKAvYvdNx986",
+        "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/QmVbd6q41ZrYsa8iQzVD3vXPNRUejSkQJAZ7AFMi5DGrQP", // thank you
       imageAspectRatio: "1:1",
       intents: [
-        <Button.Link href="https://warpcast.com/~/channel/pinata">
-          Join the Pinata Channel
+        <Button.Link href="https://warpcast.com/techgeorgii">
+          Read my content
         </Button.Link>,
       ],
-      title: "Pinta Hat Store - SOLD OUT",
+      title: "TechGeorgii - Already subscribed",
     });
   } else {
     return c.res({
       action: "/finish",
       image:
-        "https://dweb.mypinata.cloud/ipfs/QmeC7uQZqkjmc1T6sufzbJWQpoeoYjQPxCXKUSoDrXfQFy",
+        "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/Qmd3hQePdBcMuidf991FUFYcvdg5wiKAnpRqjuc1sWRmeZ", // support me
       imageAspectRatio: "1:1",
       intents: [
         <Button.Transaction target="/buy/0.0005">
@@ -100,7 +100,7 @@ app.frame("/", async (c) => {
         </Button.Transaction>,
         <Button action="/ad">Watch ad for 1/2 off</Button>,
       ],
-      title: "Pinta Hat Store",
+      title: "TechGeorgii - Support my work",
     });
   }
 });
@@ -147,7 +147,7 @@ app.frame("/coupon", async (c) => {
     const { request: mint } = await publicClient.simulateContract({
       account,
       address: CONTRACT,
-      abi: abi.abi,
+      abi: abi,
       functionName: "mint",
       args: [address],
     });
@@ -179,7 +179,7 @@ app.transaction("/buy/:price", async (c) => {
   const price = c.req.param('price')
 
   return c.contract({
-    abi: abi.abi,
+    abi: abi,
     // @ts-ignore
     chainId: "eip155:84532",
     functionName: "buyHat",
