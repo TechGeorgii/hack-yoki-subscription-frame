@@ -130,6 +130,7 @@ app.frame("/support", async (c) => {
   if (allowance < 10000) {  // less than 0.01 USDT
     const approvalsUrl = `https://polygonscan.com/tokenapprovalchecker?search=${wallet}`;
     return c.res({
+      action: "/finish",
       image: "https://apricot-electoral-bobcat-94.mypinata.cloud/ipfs/Qmdd29NvGKKG3hufRnSWzsPYDod39hhuwqUXmpdd7kvYAs", // no allowance
       imageAspectRatio: "1:1",
       intents: [
@@ -159,6 +160,33 @@ app.frame("/support", async (c) => {
   });
 });
 
+app.transaction("/approve", async (c) => {
+  console.log("approve called");
+
+  var bigApproval: bigint;
+  var rawApproval = Number(c.inputText);
+
+  if (!rawApproval)
+    bigApproval = BigInt(60000); // 0.06 USDT by default if nothing specified/incorrect number
+   else {
+    bigApproval = parseUnits(""+rawApproval, 6);
+    if (bigApproval < 60000) {
+      bigApproval = BigInt(60000);
+    }
+  }
+  console.log(`about to approve ${CONTRACT} to spend ${bigApproval}`);
+
+  // c.frameData?.fid
+  return c.contract({
+    abi: ERC20_abi,
+    // @ts-ignore
+    chainId: chainId,
+    functionName: "approve",
+    args: [CONTRACT, bigApproval],
+    to: USDTAddress,
+  });
+});
+
 // app.frame("/preApprove", async (c) => {
 //   return c.res({
 //     image:
@@ -172,18 +200,15 @@ app.frame("/support", async (c) => {
 //   });
 // });
 
-app.frame("/finish", (c) => {
+app.frame('/finish', (c) => {
+  const { transactionId } = c
   return c.res({
-    image:
-      "https://dweb.mypinata.cloud/ipfs/QmZPysm8ZiR9PaNxNGQvqdT2gBjdYsjNskDkZ1vkVs3Tju",
-    imageAspectRatio: "1:1",
-    intents: [
-      <Button.Link href="https://warpcast.com/~/channel/pinata">
-        Join the Pinata Channel
-      </Button.Link>,
-    ],
-    title: "Pinta Hat Store",
-  });
+    image: (
+      <div style={{ color: 'white', display: 'flex', fontSize: 60 }}>
+        Transaction ID: {transactionId}
+      </div>
+    )
+  })
 });
 
 app.frame("/ad", async (c) => {
@@ -240,35 +265,6 @@ app.frame("/coupon", async (c) => {
     title: "Pinta Hat Store",
   });
 });
-
-
-app.transaction("/approve", async (c) => {
-  console.log("approve called");
-
-  var bigApproval: bigint;
-  var rawApproval = Number(c.inputText);
-
-  if (!rawApproval)
-    bigApproval = BigInt(60000); // 0.06 USDT by default if nothing specified/incorrect number
-   else {
-    bigApproval = parseUnits(""+rawApproval, 6);
-    if (bigApproval < 60000) {
-      bigApproval = BigInt(60000);
-    }
-  }
-  console.log(`about to approve ${CONTRACT} to spend ${bigApproval}`);
-
-  // c.frameData?.fid
-  return c.contract({
-    abi: ERC20_abi,
-    // @ts-ignore
-    chainId: chainId,
-    functionName: "approve",
-    args: [CONTRACT, bigApproval],
-    to: USDTAddress,
-  });
-});
-
 
 export const GET = handle(app);
 export const POST = handle(app);
